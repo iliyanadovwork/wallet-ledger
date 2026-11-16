@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: wallet-ledger
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/wallet}
+    username: ${DATABASE_USER:wallet}
+    password: ${DATABASE_PASSWORD:wallet}
+    hikari:
+      # The settlement workers and the request threads share this pool, so it is the real ceiling
+      # on how much work can be in flight. Raising the worker count without raising this just moves
+      # the queue.
+      maximum-pool-size: 16
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate is only allowed to check that it matches.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        # Sorts the UPDATE statements in a flush by table and primary key. Two transactions that
+        # dirty the same two rows would otherwise write them in whatever order they happened to
+        # load them, which is a deadlock at the database with no locking code anywhere to blame.
+        order_updates: true
+        order_inserts: true
+
+  flyway:
+    enabled: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+ledger:
+  # unguarded, synchronized, optimistic or pessimistic. The first one loses money under concurrent
+  # load and exists to be measured doing it. The README has the comparison.
+  strategy: ${LEDGER_STRATEGY:pessimistic}
+  optimistic-max-attempts: 8
+  idempotency-ttl: PT24H
+  settlement-interval: PT1S
+  settlement-workers: 4
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: wallet-ledger
+
+logging:
+  level:
+    com.iliyanadov.walletledger: INFO

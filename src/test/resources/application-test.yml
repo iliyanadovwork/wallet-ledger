@@ -1,0 +1,25 @@
+ledger:
+  # The scheduler is effectively off during the tests. The settlement tests drive ticks by hand so
+  # they finish when the work is done rather than when a timer happens to fire, and nothing else
+  # has settlements running underneath it.
+  settlement-interval: PT1H
+  optimistic-max-attempts: 8
+  idempotency-ttl: PT60S
+
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    hikari:
+      maximum-pool-size: 40
+
+logging:
+  level:
+    root: WARN
+    com.iliyanadov.walletledger: INFO
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: ERROR
+    # PessimisticDeadlockIT causes a deadlock on purpose and reports it itself. Hibernate logging
+    # the same SQLSTATE at ERROR next to a passing test reads like the build fell over.
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: "OFF"
